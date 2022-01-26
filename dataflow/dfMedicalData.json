@@ -1,5 +1,5 @@
 {
-	"name": "dfMaleFemale",
+	"name": "dfMedicalData",
 	"properties": {
 		"type": "MappingDataFlow",
 		"typeProperties": {
@@ -22,31 +22,18 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "dsMedicalMale",
+						"referenceName": "dsMedicalEmployee",
 						"type": "DatasetReference"
 					},
-					"name": "Male"
-				},
-				{
-					"dataset": {
-						"referenceName": "dsMedicalFemale",
-						"type": "DatasetReference"
-					},
-					"name": "Female"
+					"name": "SinkData"
 				}
 			],
 			"transformations": [
 				{
 					"name": "FullEmployeeOutlook"
-				},
-				{
-					"name": "ConditionalSplit1"
-				},
-				{
-					"name": "Select1"
 				}
 			],
-			"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as string,\n\t\tzipcode as string,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Employee\nsource(output(\n\t\tmarital_status as string,\n\t\tchildren as string,\n\t\tancestry as string,\n\t\tavg_commute as string,\n\t\tdaily_internet_use as string,\n\t\tavailable_vehicles as string,\n\t\tmilitary_service as string,\n\t\tdisease as string,\n\t\t{P. id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EEProfile\nEmployee, EEProfile join({Patient id} == {P. id},\n\tjoinType:'inner',\n\tbroadcast: 'auto')~> FullEmployeeOutlook\nSelect1 split(equals(upper(gender), \"MALE\"),\n\tdisjoint: false) ~> ConditionalSplit1@(SplitMale, SplitFemale)\nFullEmployeeOutlook select(mapColumn(\n\t\t{Employee Name},\n\t\tgender,\n\t\tdob,\n\t\tzipcode,\n\t\temployment_status,\n\t\teducation,\n\t\t{Patient id},\n\t\tmarital_status,\n\t\tchildren,\n\t\tancestry,\n\t\tavg_commute,\n\t\tdaily_internet_use,\n\t\tavailable_vehicles,\n\t\tmilitary_service,\n\t\tdisease,\n\t\t{P. id}\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nConditionalSplit1@SplitMale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\ttruncate:true,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tpartitionBy('hash', 1)) ~> Male\nConditionalSplit1@SplitFemale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> Female"
+			"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as string,\n\t\tzipcode as string,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Employee\nsource(output(\n\t\tmarital_status as string,\n\t\tchildren as string,\n\t\tancestry as string,\n\t\tavg_commute as string,\n\t\tdaily_internet_use as string,\n\t\tavailable_vehicles as string,\n\t\tmilitary_service as string,\n\t\tdisease as string,\n\t\t{P. id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EEProfile\nEmployee, EEProfile join({Patient id} == {P. id},\n\tjoinType:'inner',\n\tbroadcast: 'auto')~> FullEmployeeOutlook\nFullEmployeeOutlook sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SinkData"
 		}
 	}
 }
