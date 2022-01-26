@@ -1,0 +1,9 @@
+{
+	"name": "adfC7AMedical",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "b3d73b12-336d-4cc4-a447-d697c97fa4db",
+		"tenantId": "07cc872f-b6e3-487f-834e-25eb4f34ddad"
+	}
+}
