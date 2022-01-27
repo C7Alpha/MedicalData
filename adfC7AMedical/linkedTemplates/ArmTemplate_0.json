@@ -385,7 +385,7 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "MaleFemaleFlow",
+						"name": "Process All Data",
 						"type": "ExecuteDataFlow",
 						"dependsOn": [],
 						"policy": {
