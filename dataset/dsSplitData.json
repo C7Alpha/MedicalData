@@ -1,0 +1,23 @@
+{
+	"name": "dsSplitData",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lsMedical",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "Medical/Output",
+				"fileSystem": "conc7a"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}

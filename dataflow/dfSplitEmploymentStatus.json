@@ -1,0 +1,53 @@
+{
+	"name": "dfSplitEmploymentStatus",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "dsMedicalEmployee",
+						"type": "DatasetReference"
+					},
+					"name": "MedicalData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dsSplitData",
+						"type": "DatasetReference"
+					},
+					"name": "SinkRetired"
+				},
+				{
+					"dataset": {
+						"referenceName": "dsSplitData",
+						"type": "DatasetReference"
+					},
+					"name": "SinkEmployed"
+				},
+				{
+					"dataset": {
+						"referenceName": "dsSplitData",
+						"type": "DatasetReference"
+					},
+					"name": "SinkStudent"
+				},
+				{
+					"dataset": {
+						"referenceName": "dsSplitData",
+						"type": "DatasetReference"
+					},
+					"name": "SinkUnemployed"
+				}
+			],
+			"transformations": [
+				{
+					"name": "EmployementStatus"
+				}
+			],
+			"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData split(equals(employment_status,\"retired\"),\n\tequals(employment_status,\"employed\"),\n\tequals(employment_status,\"student\"),\n\tdisjoint: false) ~> EmployementStatus@(Retired, Employed, Student, Unemployed)\nEmployementStatus@Retired sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(retired).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkRetired\nEmployementStatus@Employed sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(employed).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkEmployed\nEmployementStatus@Student sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(student).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkStudent\nEmployementStatus@Unemployed sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(unemployed).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkUnemployed"
+		}
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"name": "dsMedicalEmployee",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lsdbMedical",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "tblMedicalData"
+		}
+	}
+}
