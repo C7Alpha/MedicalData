@@ -1,5 +1,5 @@
 {
-	"name": "dfSplitMaleFemale",
+	"name": "dfFilterMaleFemale",
 	"properties": {
 		"type": "MappingDataFlow",
 		"typeProperties": {
@@ -18,22 +18,25 @@
 						"referenceName": "dsSplitData",
 						"type": "DatasetReference"
 					},
-					"name": "SinkMale"
+					"name": "SinkFemale"
 				},
 				{
 					"dataset": {
 						"referenceName": "dsSplitData",
 						"type": "DatasetReference"
 					},
-					"name": "SinkFemale"
+					"name": "SinkMale"
 				}
 			],
 			"transformations": [
 				{
-					"name": "ConditionalSplit1"
+					"name": "FilterMale"
+				},
+				{
+					"name": "FilterFemale"
 				}
 			],
-			"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData split(equals(upper(gender),\"MALE\"),\n\tdisjoint: false) ~> ConditionalSplit1@(SplitMale, SplitFemale)\nConditionalSplit1@SplitMale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Male).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkMale\nConditionalSplit1@SplitFemale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Female).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkFemale"
+			"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData filter(equals(upper(gender),\"MALE\")) ~> FilterMale\nMedicalData filter(not(equals(upper(gender),\"MALE\"))) ~> FilterFemale\nFilterFemale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Male).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkFemale\nFilterMale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Female).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkMale"
 		}
 	}
 }
