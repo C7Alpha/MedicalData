@@ -25,6 +25,54 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/plFilterGender')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "dfFilterMaleFemale",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dfFilterMaleFemale",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"MedicalData": {},
+									"SinkFemale": {},
+									"SinkMale": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dfFilterMaleFemale')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/plProcessData')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -120,54 +168,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/dataflows/dfSplitEmploymentStatus')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/plSplitGender')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "dfSplitMaleFemale",
-						"type": "ExecuteDataFlow",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "1.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataflow": {
-								"referenceName": "dfSplitMaleFemale",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"MedicalData": {},
-									"SinkMale": {},
-									"SinkFemale": {}
-								}
-							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
-							},
-							"traceLevel": "Fine"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/dfSplitMaleFemale')]"
 			]
 		},
 		{
@@ -372,6 +372,54 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/dfFilterMaleFemale')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "dsMedicalEmployee",
+								"type": "DatasetReference"
+							},
+							"name": "MedicalData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "dsSplitData",
+								"type": "DatasetReference"
+							},
+							"name": "SinkFemale"
+						},
+						{
+							"dataset": {
+								"referenceName": "dsSplitData",
+								"type": "DatasetReference"
+							},
+							"name": "SinkMale"
+						}
+					],
+					"transformations": [
+						{
+							"name": "FilterMale"
+						},
+						{
+							"name": "FilterFemale"
+						}
+					],
+					"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData filter(equals(upper(gender),\"MALE\")) ~> FilterMale\nMedicalData filter(not(equals(upper(gender),\"MALE\"))) ~> FilterFemale\nFilterFemale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Male).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkFemale\nFilterMale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Female).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkMale"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/dsMedicalEmployee')]",
+				"[concat(variables('factoryId'), '/datasets/dsSplitData')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/dfMedicalData')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -472,51 +520,6 @@
 						}
 					],
 					"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData split(equals(employment_status,\"retired\"),\n\tequals(employment_status,\"employed\"),\n\tequals(employment_status,\"student\"),\n\tdisjoint: false) ~> EmployementStatus@(Retired, Employed, Student, Unemployed)\nEmployementStatus@Retired sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(retired).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkRetired\nEmployementStatus@Employed sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(employed).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkEmployed\nEmployementStatus@Student sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(student).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkStudent\nEmployementStatus@Unemployed sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(unemployed).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkUnemployed"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/dsMedicalEmployee')]",
-				"[concat(variables('factoryId'), '/datasets/dsSplitData')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/dfSplitMaleFemale')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "dsMedicalEmployee",
-								"type": "DatasetReference"
-							},
-							"name": "MedicalData"
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "dsSplitData",
-								"type": "DatasetReference"
-							},
-							"name": "SinkMale"
-						},
-						{
-							"dataset": {
-								"referenceName": "dsSplitData",
-								"type": "DatasetReference"
-							},
-							"name": "SinkFemale"
-						}
-					],
-					"transformations": [
-						{
-							"name": "ConditionalSplit1"
-						}
-					],
-					"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as date,\n\t\tzipcode as long,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as long,\n\t\tmarital_status as string,\n\t\tchildren as integer,\n\t\tancestry as string,\n\t\tavg_commute as decimal(8,2),\n\t\tdaily_internet_use as decimal(8,2),\n\t\tavailable_vehicles as integer,\n\t\tmilitary_service as boolean,\n\t\tdisease as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> MedicalData\nMedicalData split(equals(upper(gender),\"MALE\"),\n\tdisjoint: false) ~> ConditionalSplit1@(SplitMale, SplitFemale)\nConditionalSplit1@SplitMale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Male).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkMale\nConditionalSplit1@SplitFemale sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['MedicalData(Female).csv'],\n\tumask: 0022,\n\tpreCommands: [],\n\tpostCommands: [],\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> SinkFemale"
 				}
 			},
 			"dependsOn": [
