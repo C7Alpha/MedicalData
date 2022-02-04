@@ -81,7 +81,14 @@
 					{
 						"name": "Process All Data",
 						"type": "ExecuteDataFlow",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "CreateTable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"timeout": "1.00:00:00",
 							"retry": 0,
@@ -108,6 +115,26 @@
 							},
 							"traceLevel": "Fine"
 						}
+					},
+					{
+						"name": "CreateTable",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[uspCreateMedicalTables]"
+						},
+						"linkedServiceName": {
+							"referenceName": "lsdbMedical",
+							"type": "LinkedServiceReference"
+						}
 					}
 				],
 				"policy": {
@@ -117,7 +144,8 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/dfMedicalData')]"
+				"[concat(variables('factoryId'), '/dataflows/dfMedicalData')]",
+				"[concat(variables('factoryId'), '/linkedServices/lsdbMedical')]"
 			]
 		},
 		{
@@ -456,10 +484,10 @@
 							"name": "FullEmployeeOutlook"
 						},
 						{
-							"name": "CorrectDOB"
+							"name": "DerivedColumns"
 						}
 					],
-					"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as string,\n\t\tzipcode as string,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Employee\nsource(output(\n\t\tmarital_status as string,\n\t\tchildren as string,\n\t\tancestry as string,\n\t\tavg_commute as string,\n\t\tdaily_internet_use as string,\n\t\tavailable_vehicles as string,\n\t\tmilitary_service as string,\n\t\tdisease as string,\n\t\t{P. id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EEProfile\nEmployee, EEProfile join({Patient id} == {P. id},\n\tjoinType:'inner',\n\tbroadcast: 'auto')~> FullEmployeeOutlook\nFullEmployeeOutlook derive(dob = toDate(dob,\"dd-MM-yyyy\"),\n\t\tgender = initCap(gender)) ~> CorrectDOB\nCorrectDOB sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SinkData"
+					"script": "source(output(\n\t\t{Employee Name} as string,\n\t\tgender as string,\n\t\tdob as string,\n\t\tzipcode as string,\n\t\temployment_status as string,\n\t\teducation as string,\n\t\t{Patient id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Employee\nsource(output(\n\t\tmarital_status as string,\n\t\tchildren as string,\n\t\tancestry as string,\n\t\tavg_commute as string,\n\t\tdaily_internet_use as string,\n\t\tavailable_vehicles as string,\n\t\tmilitary_service as string,\n\t\tdisease as string,\n\t\t{P. id} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> EEProfile\nEmployee, EEProfile join({Patient id} == {P. id},\n\tjoinType:'inner',\n\tbroadcast: 'auto')~> FullEmployeeOutlook\nFullEmployeeOutlook derive(dob = toDate(dob,\"dd-MM-yyyy\"),\n\t\tgender = initCap(gender),\n\t\t{In Military} = iif(military_service==\"yes\", \"In Military\",\"Non Military\"),\n\t\t{Birth Month} = month(toDate(dob,\"dd-MM-yyyy\"))) ~> DerivedColumns\nDerivedColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SinkData"
 				}
 			},
 			"dependsOn": [
